@@ -1,8 +1,10 @@
 <template>
+import { constants } from 'fs';
   <div>
     <div id="main"></div>
   </div>
 </template>
+
 <script>
 export default {
   name: 'histogram',
@@ -67,18 +69,7 @@ export default {
       /*===========2-建立容器对象===========*/
       /*获取main 容器*/
       const main = this.d3.select('#main')
-
-      /*声明绘图框尺寸
-          width 宽度，600
-          height 高度，600
-      */
-      const width = 600
-      const height = 600
-
-      /*建立svg 对象
-       *   svg 画布尺寸100%充满容器对象
-       *   绘图框尺寸按照600设置
-       * */
+      const { width= 600, height = 600 } = this.option.size || {}
       const svg = main
         .append('svg')
         .attr('version', 1.2)
@@ -88,6 +79,8 @@ export default {
         .attr('viewBox', `0 0 ${width} ${height}`)
 
       /*===========3-建立轴相关的基础数据===========*/
+      // 确定坐标轴的方向
+      // const { axisPosition = 'bottom'} = this.option
       /*-----x轴相关的基础数据-----*/
       /*计算类目数量 len*/
       const len = this.option.categories.length
@@ -96,7 +89,7 @@ export default {
       const xChartData = this.d3.range(len)
 
       /*x轴在像素坐标内的起始点和结束点 xPixelRange，左右各偏移50*/
-      const xPixelRange = [50, width - 50]
+      const xPixelRange = [0, width - 50]
 
       /*-----y轴相关的基础数据-----*/
       /*计算数据源中所有数据的极值 maxY
@@ -121,7 +114,7 @@ export default {
         .scaleBand()
         .domain(xChartData)
         .rangeRound(xPixelRange)
-        .padding(0.1)
+        .padding(this.option.gap)
 
       /*-----y 轴比例尺 xScale-----*/
       /*
@@ -152,7 +145,7 @@ export default {
         .call(xAxisGenerator)
         .selectAll('text')
         .text(n => this.option.categories[n])
-        .attr('font-size', '12px')
+        .attr('font-size', this.option.fontSize || '12px')
 
       /*-----y轴对象-----*/
       /*基于比例尺yScale，用axisLeft()方法创建刻度朝左的坐标轴生成器 yAxisGenerator*/
@@ -168,7 +161,7 @@ export default {
         .append('g')
         .attr('transform', 'translate(50 0)')
         .call(yAxisGenerator)
-        .attr('font-size', '12px')
+        .attr('font-size', this.option.fontSize || '12px')
       /*===========6-建立绘图区相关的基础数据===========*/
       /*-----绘图区相关的基础数据-----*/
       /*用x轴比例尺xScale的bandwidth()方法获取x轴上一个类目的像素宽xBandW*/
@@ -220,19 +213,6 @@ export default {
         .classed('item', true)
 
       /*=8-用attr()方法设置每个柱状体的x、y位置和width、height 尺寸=*/
-      /*
-       * 设置柱状体的x像素位
-       *   从回调参数中获取柱状体在当前系列中的索引rectInd,系列索引 seriesInd
-       *   基于柱状体在当前系列中的索引rectInd，用x轴比例尺xScale()获取柱状体在当前系列中的x像素位
-       * 设置柱状体像素宽width为列宽colW
-       * 设置柱状体的y像素位
-       *   从回调参数中解构柱状体数据rectData
-       *   基于柱状体数据rectData，用y轴比例尺yScale()获取柱状体的y像素位
-       * 设置柱状体的像素像素高
-       *   从回调参数中解构柱状体数据rectData
-       *   让y轴上刻度为0的像素位，减去刻度为柱状图实际数据的像素位，即为柱状图的像素高
-       * */
-
       /*第一个关键帧-柱状体的初始状态
        *   y y轴中刻度0的像素位
        *   height 0
@@ -246,13 +226,6 @@ export default {
         .attr('y', () => yScale(0))
         .attr('height', 0)
 
-      /*第二个关键字-柱状体的完整状态
-       *   transition() 建立补间动画
-       *   duration() 动画时间
-       *   delay 动画延迟
-       *   ease 补间动画的插值算法，如d3.easeBounce，参考https://github.com/d3/d3-ease
-       * */
-      console.log('rects', rects)
       rects
         .transition()
         .duration(1000)
@@ -260,7 +233,7 @@ export default {
           // return seriesInd*300
           return (seriesInd + rectInd) * 300
         })
-        .ease(this.d3.easeBounce)
+        .ease(this.d3[this.option.animateStyle])
         .attr('y', ({ rectData }) => yScale(rectData))
         .attr('height', ({ rectData }) => yScale(0) - yScale(rectData))
       const tip = main.append('div').attr('id', 'tip')
@@ -283,33 +256,35 @@ export default {
        *   更新终点位置endPos
        *   开始缓动跟随
        * */
-      rects.on(
-        'mouseover',
-        ({ clientX, clientY }, { seriesName, rectName, rectData }) => {
-          tip.style('display', 'block').html(`
-                <div>${seriesName}</div>
-                <div>${rectName}：${rectData}</div>
-            `)
+      if (this.option.pointDisplay) {
+        rects.on(
+          'mouseover',
+          ({ clientX, clientY }, { seriesName, rectName, rectData }) => {
+            tip.style('display', 'block').html(`
+                  <div>${seriesName}</div>
+                  <div>${rectName}：${rectData}</div>
+              `)
 
+            easeTip.endPos = {
+              x: clientX,
+              y: clientY
+            }
+            easeTip.play = true
+          }
+        )
+
+        /*-----鼠标移动事件 mousemove-----*/
+        /*设置提示left、top位置*/
+        /*缓动跟随
+        *   更新终点位置endPos
+        * */
+        rects.on('mousemove', ({ clientX, clientY }) => {
           easeTip.endPos = {
             x: clientX,
             y: clientY
           }
-          easeTip.play = true
-        }
-      )
-
-      /*-----鼠标移动事件 mousemove-----*/
-      /*设置提示left、top位置*/
-      /*缓动跟随
-       *   更新终点位置endPos
-       * */
-      rects.on('mousemove', ({ clientX, clientY }) => {
-        easeTip.endPos = {
-          x: clientX,
-          y: clientY
-        }
-      })
+        })
+      }
 
       /*-----鼠标划出事件 mouseout-----*/
       /*隐藏提示*/

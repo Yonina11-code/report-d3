@@ -1,21 +1,19 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
+    <!-- <img alt="Vue logo" src="./assets/logo.png"> -->
     <histogram :data="source" :option="option"></histogram>
   </div>
 </template>
 
 <script>
+import { option } from "@/const/histogram"
 export default {
   name: 'App',
   components: {
   },
   data () {
     return {
-      option: {
-        categories: ['html','css','js'],
-        dimensions: ['学习人数','就业人数']
-      },
+      option: option,
       source: [
           //html css js
           [ 30,  20, 40], //学习人数
