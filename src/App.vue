@@ -1,15 +1,18 @@
 <template>
   <div id="app">
     <!-- <img alt="Vue logo" src="./assets/logo.png"> -->
-    <histogram :data="source" :option="option"></histogram>
+    <!-- <histogram :data="source" :option="option"></histogram> -->
+    <bar-chart title="test" xKey="name" yKey="amount" :data="source" :option="option"></bar-chart>
   </div>
 </template>
 
 <script>
 import { option } from "@/const/histogram"
+import BarChart from '@/components/bar-chart'
 export default {
   name: 'App',
   components: {
+    BarChart
   },
   data () {
     return {
@@ -18,7 +21,25 @@ export default {
           //html css js
           [ 30,  20, 40], //学习人数
           [ 40,  30, 50], //就业人数
-      ]
+      ],
+          barChartData: [
+      {
+        name: "张三",
+        amount: 25
+      },
+      {
+        name: "李四",
+        amount: 40
+      },
+      {
+        name: "老王",
+        amount: 15
+      },
+      {
+        name: "老赖",
+        amount: 9
+      }
+    ]
     }
   }
 }

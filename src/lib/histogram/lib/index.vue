@@ -1,5 +1,4 @@
 <template>
-import { constants } from 'fs';
   <div>
     <div id="main"></div>
   </div>
@@ -79,17 +78,15 @@ export default {
         .attr('viewBox', `0 0 ${width} ${height}`)
 
       /*===========3-建立轴相关的基础数据===========*/
-      // 确定坐标轴的方向
-      // const { axisPosition = 'bottom'} = this.option
-      /*-----x轴相关的基础数据-----*/
-      /*计算类目数量 len*/
+      // 判断x坐标轴的位置
+      const axisPosition = this.option.axisPosition || 'bottom'
+      const position = { 'bottom': ['axisBottom', 'axisLeft'], 'top': ['axisTop', 'axisLeft'], 'left': ['axisLeft', 'axisBottom']}
+      const transform = { 'bottom': [`translate(0, ${height - 50})`, 'translate(50 0)'], 'top': [`translate(0 50)`, 'translate(50 0)'], 'left': [`translate(50, 0)`, `translate(0, ${height - 50})`] }
       const len = this.option.categories.length
-
-      /*用range()方法，基于类目数量，获取x轴的在图表坐标系中的数据 xChartData，如[0,1,2]*/
       const xChartData = this.d3.range(len)
 
       /*x轴在像素坐标内的起始点和结束点 xPixelRange，左右各偏移50*/
-      const xPixelRange = [0, width - 50]
+      const xPixelRange = [50, width - 50]
 
       /*-----y轴相关的基础数据-----*/
       /*计算数据源中所有数据的极值 maxY
@@ -103,68 +100,34 @@ export default {
       /*声明y轴在像素坐标系中的数据起点和结束点 yPixelRange*/
       const yPixelRange = [height - 50, 50]
       /*===========4-建立比例尺===========*/
-      /*-----x 轴比例尺 xScale-----*/
-      /*
-       * 用scaleBand()方法建立分段比例尺 xScale
-       * 用domain()方法在比例尺中写入图表数据xChartData
-       * 用rangeRound()方法在比例尺中写入像素数据，即像素的起始位和结束位xPixelRange
-       * 用padding()方法设置类目的内边距，百分比单位，如0.1
-       * */
       const xScale = this.d3
         .scaleBand()
         .domain(xChartData)
         .rangeRound(xPixelRange)
         .padding(this.option.gap)
 
-      /*-----y 轴比例尺 xScale-----*/
-      /*
-       * 用scaleLinear()方法建立线性比例尺 yScale
-       * 用domain()方法在比例尺中写入图表数据yChartRange
-       * range()方法在比例尺中写入像素数据，即像素的起始位和结束位yPixelRange
-       * */
       const yScale = this.d3
         .scaleLinear()
         .domain(yChartRange)
         .range(yPixelRange)
       /*===========5-建立轴对象===========*/
-      /*-----x轴对象-----*/
-      /*基于比例尺xScale，用axisBottom()方法创建刻度朝下的坐标轴生成器 xAxisGenerator*/
-      const xAxisGenerator = this.d3.axisBottom(xScale)
-
-      /*利用坐标轴生成器绘制坐标轴
-       *   在svg中append 加入g 对象
-       *   用transform 属性中的translateY 设置x轴的y位置
-       *   用call()方法调用xAxisGenerator轴生成器，生成坐标轴
-       *   用selectAll()方法选择所有的text文本
-       *   用text()方法将图表数据设置为类目数据
-       *   用attr()方法设置字体大小
-       * */
+      const xAxisGenerator = this.d3[position[axisPosition][0]](xScale)
       svg
         .append('g')
-        .attr('transform', `translate(0, ${height - 50})`)
+        .attr('transform', transform[axisPosition][0])
         .call(xAxisGenerator)
         .selectAll('text')
         .text(n => this.option.categories[n])
         .attr('font-size', this.option.fontSize || '12px')
 
-      /*-----y轴对象-----*/
-      /*基于比例尺yScale，用axisLeft()方法创建刻度朝左的坐标轴生成器 yAxisGenerator*/
-      const yAxisGenerator = this.d3.axisLeft(yScale)
-
-      /*利用坐标轴生成器生成坐标轴
-       *   在svg中append 加入g 对象
-       *   用transform 属性中的translate设置y轴的x位置
-       *   用call()方法调用xAxisGenerator轴生成器，生成坐标轴
-       *   用attr()方法设置字体大小
-       * */
+      const yAxisGenerator = this.d3[position[axisPosition][1]](yScale)
       svg
         .append('g')
-        .attr('transform', 'translate(50 0)')
+        .attr('transform', transform[axisPosition][1])
         .call(yAxisGenerator)
         .attr('font-size', this.option.fontSize || '12px')
       /*===========6-建立绘图区相关的基础数据===========*/
       /*-----绘图区相关的基础数据-----*/
-      /*用x轴比例尺xScale的bandwidth()方法获取x轴上一个类目的像素宽xBandW*/
       const xBandW = xScale.bandwidth()
 
       /*获取系列的数量n*/
@@ -212,11 +175,6 @@ export default {
         .join('rect')
         .classed('item', true)
 
-      /*=8-用attr()方法设置每个柱状体的x、y位置和width、height 尺寸=*/
-      /*第一个关键帧-柱状体的初始状态
-       *   y y轴中刻度0的像素位
-       *   height 0
-       * */
       rects
         .attr('x', ({ rectData = '' }, rectInd) => {
           console.log('rectData', rectData)
@@ -239,19 +197,6 @@ export default {
       const tip = main.append('div').attr('id', 'tip')
 
       /*===========10-为柱状体添加鼠标事件===========*/
-      /*-----鼠标划入事件 mouseover-----*/
-      /*
-       * 从事件中的第一个回调参数解析目标对象和鼠标位置
-       *   鼠标位置 clientX,clientY
-       * 从事件中的第二个回调参数解析当前柱状体的数据
-       *   柱状体数据 rectData
-       *   柱状体名称 rectName
-       *   系列名 seriesName
-       * 基于鼠标位置和柱状体信息显示提示
-       *   style()设置display 为block
-       *   style()设置left、top位置
-       *   html()设置元素的html 内容
-       * */
       /*缓动跟随
        *   更新终点位置endPos
        *   开始缓动跟随
