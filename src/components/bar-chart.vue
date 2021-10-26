@@ -1,18 +1,6 @@
 <template>
   <div>
-    <svg id="svg" :width="width" :height="height">
-      <g>
-        <rect
-          v-for="(item, index) in data"
-          class="bar-positive"
-          :key="index"
-          :x="xScale(item[0])"
-          :y="yScale(0)"
-          :width="xScale.bandwidth()"
-          :height="100"
-        ></rect>
-      </g>
-    </svg>
+    <svg id="svg" :width="width" :height="height"></svg>
   </div>
 </template>
 <script>
@@ -51,20 +39,40 @@ export default {
     },
     // x轴在像素坐标内的起始点和结束点 xPixelRange，左右各偏移50
     xPixelRange () {
-      return [50, this.width - 50]
+      switch (this.option.axisPosition) {
+        case 'left':
+          return [this.width - 50, 50]
+        default:
+          return [50, this.width - 50]
+      }
     },
     // y轴的极值
     maxY () {
       // data 是纯数字的情况下
-      return  Math.max(...this.data.flat())
+      return  this.d3.max(this.data, d => {
+        console.log('d...', d[this.option.valueName])
+        return d[this.option.valueName]
+      })
     },
     // 声明y轴在图表坐标系中的数据起点和结束点 yChartRange
     yChartRange () {
-      return [0, this.maxY]
+      console.log('this.axisY', this.axisY, this.axisX)
+      switch (this.option.axisPosition) {
+        case 'left':
+          return [this.maxY, 0]
+        default:
+          return [0, this.maxY]
+      }
     },
     // 声明y轴在像素坐标系中的数据起点和结束点 yPixelRange
     yPixelRange () {
-      return [this.height - 50, 50]
+      console.log('this.position', this.position)
+      switch (this.option.axisPosition) {
+        case 'top':
+          return [50, this.height - 50]
+        default:
+          return [this.height - 50, 50]
+      }
     },
     xChartData () {
       const len = this.option.categories.length
@@ -82,6 +90,9 @@ export default {
               .scaleLinear()
               .domain(this.yChartRange)
               .range(this.yPixelRange)
+    },
+    svgHeight () {
+      return this.width / 1.61803398875; // 黄金比例
     }
   },
   data() {
@@ -90,6 +101,7 @@ export default {
   },
   mounted () {
     this.drawAxis()
+    this.animateLoad()
   },
   methods: {
     drawAxis () {
@@ -118,6 +130,58 @@ export default {
       // const colW = xBandW / n
       // /*计算调色盘颜色数量colorLen*/
       // const colorLen = this.color.length
+    },
+    animateLoad () {
+            const itemSize = this.option.itemSize
+            this.d3.select('svg')
+             .selectAll('rect')
+             .data(this.data)
+             .enter()
+             .append('rect')
+             .transition()
+             .delay((d, i) => {
+               return i * 5
+             })
+             .duration(1000)
+             .attr('y', (d, i) => {
+               console.log('axisX', this.axisX)
+               switch (this.axisX) {
+                 case 'axisBottom':
+                  return this.yScale(d[this.option.valueName])
+                case 'axisTop':
+                  return this.yPixelRange[0]
+                case 'axisLeft':
+                  return this.xScale(i)
+               }
+             })
+             .attr('x', (d, i) => {
+                switch (this.axisX) {
+                  case 'axisLeft':
+                    return 50
+                  default:
+                    return this.xScale(i)
+                }
+             })
+             .attr('height', (d) => {
+                switch (this.axisX) {
+                 case 'axisBottom':
+                  return this.yScale(0) - this.yScale(d[this.option.valueName])
+                case 'axisTop':
+                  return this.yScale(d[this.option.valueName]) - 50
+                case 'axisLeft':
+                  return itemSize
+                }
+             })
+             .attr('width', (d) => {
+               console.log('this.xScale(d[this.option.valueName])', this.xScale(d[this.option.valueName]))
+               switch (this.axisX) {
+                  case 'axisLeft':
+                    return this.yScale(d[this.option.valueName]) - 50
+                  default:
+                    return itemSize
+               }
+             })
+             .attr("fill","steelblue")
     }
   }
 }

@@ -1,15 +1,56 @@
-// // pay.vue写我们的组件
-// import histogram from './index'
+class EaseObj {
+  /*构造函数*/
+  constructor(target) {
+    this.target = target
+    this.fm = 0
+    this.pos = { x: 0, y: 0 }
+    this.endPos = { x: 0, y: 0 }
+    this.ratio = 0.1
+    this._play = false
+  }
+  /*play 属性的取值器*/
+  get play() {
+    return this._paly
+  }
+  /*play 属性的赋值器
+   *   现在的值不等于当过去值时
+   *       当现在的值为true时
+   *           缓动跟随
+   *           更新目标对象
+   *           连续渲染
+   *       当现在的值为false时
+   *           删除动画帧，取消连续渲染
+   * */
+  set play(val) {
+    if (val !== this._play) {
+      if (val) {
+        this.render()
+      } else {
+        this.cancel()
+      }
+      this._play = val
+    }
+  }
 
-// // 定义我们的插件
-// const myPlugin = {
-//     // 该插件有一个install方法
-//     // 方法的第一个参数是传入的Vue，第二个参数可以插件的自定义参数
-//     install (Vue) {
-//         // 将其注册为vue的组件，'vpay'是组件名，keyboard是我们开发的组件
-//         Vue.component('histogram', histogram)
-//     }
-// }
+  /*render 渲染方法
+   *   按比值，让pos位置接近终点endPos
+   *   更新目标对象target的样式
+   *   连续渲染
+   * */
+  render () {
+    const { target, pos, endPos, ratio } = this
+    pos.x += (endPos.x - pos.x) * ratio
+    pos.y += (endPos.y - pos.y) * ratio
+    // console.log('pos.x', pos.x, pos.y)
+    target.style('left', `${pos.x}px`).style('top', `${pos.y}px`)
+    this.fm = requestAnimationFrame(() => {
+      this.render()
+    })
+  }
 
-// // 最后将插件导出，并在main.js中通过Vue.use()即可使用插件
-// export default myPlugin
+  /*cancel 删除动画帧，取消连续渲染*/
+  cancel() {
+    cancelAnimationFrame(this.fm)
+  }
+}
+export default EaseObj

@@ -5,11 +5,14 @@ export const option = {
   }, // 画布大小
   fontSize: '16px', // 文字大小
   // gap: 50,
+  itemSize: 60, // 每条柱子的大小
   backgroundColor: '', // 背景色
   title: '柱状图',
+  axisX: 'name',
+  valueName: 'amount',
   titlePosition: '', // 标题位置 top 、center、bottom
   axisPosition: 'bottom', // 坐标轴线的位置
-  categories: ['html','css','js'], //横坐标轴显示的内容
+  categories: ['html','css','js', ''], //横坐标轴显示的内容
   dimensions: ['学习人数','就业人数'],  // 横坐标轴中每个类目， 需要显示的种类
   initAnimate: true, // 是否需要初始动画
   pointDisplay: true, // 鼠标移入时是否显示数据
