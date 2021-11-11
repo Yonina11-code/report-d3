@@ -6,7 +6,7 @@ export const option = {
   fontSize: '16px', // 文字大小
   // gap: 50,
   itemSize: 60, // 每条柱子的大小
-  backgroundColor: '', // 背景色
+  backgroundColor: '#f0f0f0', // 背景色
   title: '柱状图',
   axisX: 'name',
   valueName: 'amount',

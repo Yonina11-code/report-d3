@@ -1,16 +1,19 @@
 <template>
   <div id="main">
     <h1>{{option.title}}</h1>
-    <svg id="svg" :width="width" :height="height"></svg>
+    <svg id="svg" :width="width" :height="height">
+    </svg>
   </div>
 </template>
 <script>
 import EaseObj from './index.js'
+import mixins from '../../util/minix.js'
 export default {
   name: 'barChart',
+  mixins: [mixins],
   props: {
-    option: Object,
-    data: Array
+    // option: Object,
+    // data: Array
   },
   computed: {
     // 画布的宽
@@ -109,6 +112,7 @@ export default {
       let svg = this.d3.select('#svg')
       const xAxisGenerator = this.d3[this.axisX](this.xScale)
       const yAxisGenerator = this.d3[this.axisY](this.yScale)
+      this.drawBackground(svg, xAxisGenerator, yAxisGenerator)
       // 绘制x坐标轴
       svg.append('g')
       .attr('transform', this.transform[this.axisPosition][0])
@@ -138,7 +142,7 @@ export default {
              .selectAll('rect')
              .data(this.data)
              .enter()
-             .append('rect')
+             .insert('rect')
              .transition()
              .delay((d, i) => {
                return i * 5
@@ -187,31 +191,84 @@ export default {
     },
     // 鼠标移动事件
     handleMouse () {
+      let _this = this
       const tip = this.d3.select('#main').append('div').attr('id', 'tip')
+      console.log('tip', tip)
       const easeTip = new EaseObj(tip)
       const rects = this.d3.select('svg').selectAll('rect')
-      rects.on('mouseover', ({ clientX, clientY }, { amount, name }) => {
+      rects.on('mouseover', function ({ pageX, pageY }, { amount, name }) {
        tip.style('display', 'block').html(`<div>${name}: ${amount}</div>`)
         console.log('easeTip', easeTip)
         easeTip.endPos = {
-          x: clientX,
-          y: clientY
+          x: pageX,
+          y: pageY
         }
         easeTip.play = true
-        console.log('easeTip', easeTip)
+        _this.d3.select(this).attr('opacity', 0.6)
       })
       // 鼠标移动
-      rects.on('mousemove', ({ clientX, clientY}) => {
+      rects.on('mousemove', function ({ pageX, pageY}) {
         easeTip.endPos = {
-          x: clientX,
-          y: clientY
+          x: pageX,
+          y: pageY
         }
+        _this.d3.select(this).attr('opacity', 0.6)
+
       })
       // 鼠标划出
-      rects.on('mouseout', () => {
+      rects.on('mouseout', function () {
         tip.style('display', 'none')
+        _this.d3.select(this).attr('opacity', 1)
         easeTip.play = false
       })
+    },
+    // 绘制背景色
+    drawBackground () {
+      const itemSize = this.option.itemSize
+      this.d3.select('svg')
+             .selectAll('rect')
+             .data(this.data)
+             .enter()
+             .insert('rect')
+             .attr('y', (d, i) => {
+               console.log('axisX', this.axisX)
+               switch (this.axisX) {
+                 case 'axisBottom':
+                  return 50
+                case 'axisTop':
+                  return this.yScale(d[this.option.valueName])
+                case 'axisLeft':
+                  return this.xScale(i)
+               }
+             })
+             .attr('x', (d, i) => {
+                switch (this.axisX) {
+                  case 'axisLeft':
+                    return 50
+                  default:
+                    return this.xScale(i)
+                }
+             })
+             .attr('height', (d) => {
+                switch (this.axisX) {
+                 case 'axisBottom':
+                  return this.yScale(d[this.option.valueName]) - 50
+                case 'axisTop':
+                  return this.yScale(0) - this.yScale(d[this.option.valueName])
+                case 'axisLeft':
+                  return itemSize
+                }
+             })
+             .attr('width', (d) => {
+               console.log('this.xScale(d[this.option.valueName])', this.xScale(d[this.option.valueName]))
+               switch (this.axisX) {
+                  case 'axisLeft':
+                    return this.yScale(d[this.option.valueName]) - 50
+                  default:
+                    return itemSize
+               }
+             })
+             .attr("fill",this.option.backgroundColor)
     }
   }
 }

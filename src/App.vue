@@ -1,8 +1,8 @@
 <template>
   <div id="app">
     <!-- <img alt="Vue logo" src="./assets/logo.png"> -->
-    <histogram :data="barChartData" :option="option" title="test"></histogram>
-    <pie></pie>
+    <histogram :data="barChartData" :option="option"></histogram>
+    <pie :option="pieOptions" :data="barChartData"></pie>
     <!-- <bar-chart title="test" xKey="name" yKey="amount" :data="source" :option="option"></bar-chart> -->
     <!-- <circle-progress></circle-progress> -->
   </div>
@@ -10,6 +10,7 @@
 
 <script>
 import { option } from "@/const/histogram"
+import { options as pieOptions } from '@/const/pie'
 // import BarChart from '@/components/bar-chart'
 // import circleProgress from '@/components/circle-progress'
 
@@ -22,6 +23,7 @@ export default {
   data () {
     return {
       option: option,
+      pieOptions: pieOptions,
       source: [
           //html css js
           [ 30,  20, 40], //学习人数
